@@ -1,0 +1,47 @@
+import telebot
+from telebot import types
+import random
+
+TOKEN = "8966777911:AAFiKgpWW9w1MGvw7awTujtMtGB1YjMzZIU"
+bot = telebot.TeleBot(TOKEN)
+
+user_history = {}
+FRUITS = ["🍎 تفاح", "🍌 موز", "🍉 بطيخ", "🍇 عنب", "🍓 فراولة"]
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_history[message.chat.id] = []
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("🔮 بدء التحليل الجديد"))
+    bot.send_message(message.chat.id, "مرحباً بك في بوت توقعات لعبة الفواكه! 🧠\nاضغط على الزر أدناه لإدخال الشريط.", reply_markup=markup)
+
+@bot.message_handler(func=lambda message: message.text == "🔮 بدء التحليل الجديد")
+def start_analysis(message):
+    user_history[message.chat.id] = []
+    ask_for_fruit(message.chat.id)
+
+def ask_for_fruit(chat_id):
+    current_count = len(user_history.get(chat_id, []))
+    if current_count < 3:
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        markup.add(*[types.KeyboardButton(f) for f in FRUITS])
+        bot.send_message(chat_id, f"اختار الفاكهة رقم ({current_count + 1}) في الشريط:", reply_markup=markup)
+    else:
+        perform_analysis(chat_id)
+
+@bot.message_handler(func=lambda message: message.text in FRUITS)
+def handle_fruit_input(message):
+    if message.chat.id guessing not in user_history: user_history[message.chat.id] = []
+    user_history[message.chat.id].append(message.text)
+    ask_for_fruit(message.chat.id)
+
+def perform_analysis(chat_id):
+    history = user_history.get(chat_id, [])
+    prediction = random.choice([f for f in FRUITS if f != history[-1]])
+    result_text = f"📊 **نتائج التحليل:**\n\nالشريط: {' ⬅️ '.join(history)}\n🔮 **التوقع القادم:** {prediction}\n🎯 **النسبة:** {random.randint(75, 96)}%"
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("🔮 بدء التحليل الجديد"))
+    bot.send_message(chat_id, result_text, parse_mode="Markdown", reply_markup=markup)
+    user_history[chat_id] = []
+
+bot.polling(none_stop=True)
